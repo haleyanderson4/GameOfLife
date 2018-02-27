@@ -1,7 +1,5 @@
 //Haley Anderson, 2270112, ander427@mail.chapman.edu, CPSC 350-02, Assignment 2
 
-#include "Bacteria.h"
-#include "Coordinate.h"
 #include "World.h"
 #include <iostream>
 #include <chrono>
@@ -10,9 +8,9 @@
 
 using namespace std;
 
-World::World() { } //default constructor
+World::World() {} //blank constructor
 
-World::World(Bacteria [] board, int boundary, int output, string name) //overload constructor
+World::World(Bacteria** board, int boundary, int output, string name) //constructor
 {
     bMode = boundary;
     vMode = output;
@@ -42,86 +40,48 @@ World::World(Bacteria [] board, int boundary, int output, string name) //overloa
 World::~World()
 {
     delete [] gameBoard;
+    delete [] tempBoard;
 }
 
-void play()
+void World::play()
 {
     //where all the rules about living and dying goes
 
     for(int i = 0; i < gameBoard.length(); ++i)
     {
-      for(int j = 0; j <gameBoard[].length(); ++j)
+      for(int j = 0; j < gameBoard[].length(); ++j)
       {
           int neighbors = 0;
 
-          if(gameBoard[i][j].getAlive() == false)
-          { continue; }
-
-          if(bMode == 0)
+          if(i != 0 && j != 0 && i != gameBoard.length()-1 && j != gameBoard[].length()-1) { middles(); }
+          else
           {
-            //Classic mode
-            if(gameBoard[i][j].getAlive())
-            {
-              neighbors++;
-            }
-          }
-          else if(bMode == 1)
-          {
-            //Doughnut mode
-            if(gameBoard[i][j].getAlive())
-            {
-              neighbors++;
-            }
+            if(bMode == 0) { cMode(); } //Classic mode
+            else if(bMode == 1) { dMode(); } //Doughnut mode
+            else if(bMode == 2) { mMode(); } //Mirror mode
           }
 
-          if(neighbors < 2 || neighbors > 3)
-          {
-            tempBoard[i][j].triggerDeath();
-          }
-          if(neighbors == 3)
-          {
-            do {
-              int randLoc;
-              do {
-                randLoc = ((int)rand() / (RAND_MAX));
-              } while(randLoc < 0 || randLoc > 8);
-              //grab a random location around the bacteria to repopulate in
-              if(/* selection */.getAlive() == false)
-              {
-                /* selection */.triggerLife();
-                break;
-              }
-            } while(true);
-            //maybe a function to find neighbor cells that takes input of the row and column
-          }
+          if(neighbors < 2 || neighbors > 3) { tempBoard[i][j].triggerDeath(); }
+          if(neighbors == 3) { tempBoard[i][j].triggerLife(); }
       }
     }
 
     for(int i = 0; i < gameBoard.length(); ++i)
     {
-      for(int j = 0; j <gameBoard[].length(); ++j)
-      {
-          gameBoard[i][j] = tempBoard[i][j];
-      }
+      for(int j = 0; j <gameBoard[].length(); ++j) { gameBoard[i][j] = tempBoard[i][j]; }
     }
 }
 
-void output()
+void World::output()
 {
     iteration++;
-    string results = "\nCycle number " + (string)iteration + ":\n";
+    string results = "\nCycle number " + (string)(iteration) + ":\n";
     for(int i = 0; i < gameBoard.length(); i++)
     {
       for(int j  0; j < gameBoard[].length(); j++)
       {
-          if(gameBoard[i][j].getAlive())
-          {
-            results += "X";
-          }
-          else
-          {
-            results += "-";
-          }
+          if(gameBoard[i][j].getAlive()) { results += "X"; }
+          else { results += "-"; }
       }
       results += "\n";
     }
@@ -154,4 +114,226 @@ void output()
         cin>> whatever;
       }
     }
+}
+
+void World::middles()
+{
+    if(gameBoard[i-1][j-1].getAlive()) { neighbors++; } //lower left diagonal
+    if(gameBoard[i-1][j+1].getAlive()) { neighbors++; } //lower right diagonal
+    if(gameBoard[i][j+1].getAlive()) { neighbors++; } //cell directly right
+    if(gameBoard[i-1][j].getAlive()) { neighbors++; } //cell below
+    if(gameBoard[i][j-1].getAlive()) { neighbors++; } //cell directly left
+    if(gameBoard[i+1][j-1].getAlive()) { neighbors++; } //upper left diagonal
+    if(gameBoard[i+1][j+1].getAlive()) { neighbors++; } //upper right diagonal
+    if(gameBoard[i+1][j].getAlive()) { neighbors++; } //cell directly above
+}
+
+void World::cMode()
+{
+  //hard code the 4 corners
+  if(i == 0 && j == 0)
+  {
+    if(gameBoard[0][1].getAlive()) { neighbors++; } //cell directly right
+    if(gameBoard[1][1].getAlive()) { neighbors++; } //cell diagonal
+    if(gameBoard[1][0].getAlive()) { neighbors++; } //cell directly below
+  }
+  if(i == 0 && j == gameBoard[].length()-1)
+  {
+    if(gameBoard[0][gameBoard[].length()-2].getAlive()) { neighbors++; } //cell directly left
+    if(gameBoard[1][gameBoard[].length()-1].getAlive()) { neighbors++; } //cell directly below
+    if(gameBoard[1][gameBoard[].length()-2].getAlive()) { neighbors++; } //cell diagonal
+  }
+  if(i == gameBoard.length()-1 && j == 0)
+  {
+    if(gameBoard[gameBoard.length()-1][1].getAlive()) { neighbors++; } //cell directly right
+    if(gameBoard[gameBoard.length()-2][0].getAlive()) { neighbors++; } //cell directly above
+    if(gameBoard[gameBoard[].length()-2][1].getAlive()) { neighbors++; } //cell diagonal
+  }
+  if(i == gameBoard.length()-1 && j == gameBoard[].length()-1)
+  {
+    if(gameBoard[gameBoard[].length()-1][gameBoard[].length()-2].getAlive()) { neighbors++; } //cell left
+    if(gameBoard[gameBoard[].length()-2][gameBoard[].length()-1].getAlive()) { neighbors++; } //cell above
+    if(gameBoard[gameBoard[].length()-2][gameBoard[].length()-2].getAlive()) { neighbors++; } //cell diagonal
+  }
+
+  //code all the in between the corners on the sides
+  sides();
+}
+
+void World::dMode()
+{
+  //hard code 4 corners
+  if(i == 0 && j == 0)
+  {
+    if(gameBoard[gameBoard.length()-1][j].getAlive()){ neighbors++; } //cell above
+    if(gameBoard[gameBoard.length()-1][j+1].getAlive()) { neighbors++; } //cell upper right diagonal
+    if(gameBoard[gameBoard.length()-1][gameBoard[].length()-1]].getAlive()){ neighbors++; } //upper left diagonal
+    if(gameBoard[i][gameBoard[].length()-1].getAlive()) { neighbors++; } //left
+    if(gameBoard[i+1][gameBoard[].length()-1].getAlive()) { neighbors++; } //lower left diagonal
+    if(gameBoard[i][j+1].getAlive()) { neighbors++; } //cell right
+    if(gameBoard[i+1][j+1].getAlive()) { neighbors++; } //cell lower right diagonal
+    if(gameBoard[i+1][j].getAlive()) { neighbors++; } //cell below
+  }
+
+  if(i == 0 && j == gameBoard[].length()-1)
+  {
+    if(gameBoard[i+1][j].getAlive()) { neighbors++; } //cell below
+    if(gameBoard[i+1][j-1].getAlive()) { neighbors++; } //cell lower left diagonal
+    if(gameBoard[i+1][0].getAlive()) { neighbors++; } //lower right diagonal
+    if(gameBoard[i][j-1].getAlive()) { neighbors++; } //cell left
+    if(gameBoard[i][0].getAlive()) { neighbors++; } //cell right
+    if(gameBoard[gameBoard.length()-1][j].getAlive()) { neighbors++; } //cell above
+    if(gameBoard[gameBoard.length()-1][j-1].getAlive()) { neighbors++; } //cell upper left diagonal
+    if(gameBoard[gameBoard.length()-1][0].getAlive()) { neighbors++; } //upper right diagonal
+  }
+
+  if(i == gameBoard.length()-1 && j == 0)
+  {
+    if(gameBoard[i][j+1].getAlive()) { neighbors++; } //cell left
+    if(gameBoard[i][gameBoard[].length()-1].getAlive()) { neighbors++; } //cell right
+    if(gameBoard[0][j].getAlive()) { neighbors++; } //cell below
+    if(gameBoard[0][j+1].getAlive()) { neighbors++; } //cell lower right
+    if(gameBoard[i-1][j].getAlive()) { neighbors++; } //cell above
+    if(gameBoard[i-1][j+1].getAlive()) { neighbors++; } //cell upper right diagonal
+    if(gameBoard[gameBoard.length()-1][gameBoard[].length()-1].getAlive()) { neighbors++; } //cell lower left diagonal
+    if(gameBoard[i-1][gameBoard[].length()-1].getAlive()) { neighbors++; } //cell upper left diagonal
+  }
+
+  if(i == gameBoard.length()-1 && j == gameBoard[].length()-1)
+  {
+    if(gameBoard[i][j-1].getAlive()) { neighbors++; } //cell left
+    if(gameBoard[i-1][j].getAlive()) { neighbors++; } //cell above
+    if(gameBoard[i-1][j-1].getAlive()) { neighbors++; } //cell left upper diagonal
+    if(gameBoard[i][0].getAlive()) { neighbors++; } //cell right
+    if(gameBoard[i-1][0].getAlive()) { neighbors++; } //cell upper left diagonal
+    if(gameBoard[0][j].getAlive()) { neighbors++; } //cell below
+    if(gameBoard[0][j-1].getAlive()) { neighbors++; } //cell lower left diagonal
+    if(gameBoard[0][0].getAlive()) { neighbors++; } //cell lower right diagonal
+  }
+
+  //code all the in between the corners on the sides with the extra for Doughnut
+  sides();
+  if(i == 0 && j != 0 && j != gameBoard[].length()-1)
+  {
+    if(gameBoard[gameBoard.length()-1][j-1].getAlive()) { neighbors++; } //cell upper left
+    if(gameBoard[gameBoard.length()-1][j].getAlive()) { neighbors++; } //cell above
+    if(gameBoard[gameBoard.length()-1][j+1].getAlive()) { neighbors++; } //cell upper right
+  }
+
+  if(i == gameBoard.length()-1 && j != 0 && j != gameBoard[].length()-1)
+  {
+    if(gameBoard[0][j-1].getAlive()) { neighbors++; } //cell lower left diagonal
+    if(gameBoard[0][j].getAlive()) { neighbors++; } //cell below
+    if(gameBoard[0][j+1].getAlive()) { neighbors++; } //cell lower right diagonal
+  }
+
+  if(i != 0 && i != gameBoard.length()-1 && j == 0)
+  {
+    if(gameBoard[i-1][gameBoard[].length()-1].getAlive()) { neighbors++; } //cell upper left diagonal
+    if(gameBoard[i][gameBoard[].length()-1].getAlive()) { neighbors++; } //cell left
+    if(gameBoard[i+1][gameBoard[].length()-1].getAlive()) { neighbors++; } //cell lower left diagonal
+  }
+
+  if(i != 0 && i != gameBoard.length()-1 && j == gameBoard[].length()-1)
+  {
+    if(gameBoard[i-1][0].getAlive()) { neighbors++; } //cell upper right diagonal
+    if(gameBoard[i][0].getAlive()) { neighbors++; } //cell lower right
+    if(gameBoard[i+1][0].getAlive()) { neighbors++; } //cell lower right diagonal
+  }
+}
+
+void World::mMode()
+{
+  if(i == 0 && j == 0)
+  {
+    if(gameBoard[i][j].getAlive()) { neighbors += 3; } //because its own reflection counts as 3, left, above, diagonal
+    if(gameBoard[i][j+1].getAlive()) { neighbors += 2; } //bc left counts as 2
+    if(gameBoard[i+1][j].getAlive()) { neighbors += 2; } //bc below counts as 2
+    if(gameBoard[i+1][j+1].getAlive()) { neighbors++; } //bc diagonal is only 1, no reflection
+  }
+
+  if (i == 0 && j == gameBoard[].length()-1)
+  {
+    if(gameBoard[i][j].getAlive()) { neighbors += 3; } //because its own reflection counts as 3, left, above, diagonal
+    if(gameBoard[i][j-1].getAlive()) { neighbors += 2; } //bc left counts as 2
+    if(gameBoard[i+1][j].getAlive()) { neighbors += 2; } //bc below counts as 2
+    if(gameBoard[i+1][j-1].getAlive()) { neighbors++; } //bc diagonal is only 1, no reflection
+  }
+
+  if(i == gameBoard.length()-1 && j == 0)
+  {
+    if(gameBoard[i][j].getAlive()) { neighbors += 3; } //because its own reflection counts as 3, left, above, diagonal
+    if(gameBoard[i-1][j].getAlive()) { neighbors += 2; } //bc above counts as 2
+    if(gameBoard[i][j+1].getAlive()) { neighbors += 2; } //bc right counts as 2
+    if(gameBoard[i-1][j+1].getAlive()) { neighbors++; } //bc diagonal is only 1, no reflection
+  }
+
+  if(i == gameBoard.length()-1 && j == gameBoard[].length()-1)
+  {
+    if(gameBoard[i][j].getAlive()) { neighbors += 3; } //because its own reflection counts as 3, left, above, diagonal
+    if(gameBoard[i][j-1].getAlive()) { neighbors += 2; } //bc left counts as 2
+    if(gameBoard[i+1][j].getAlive()) { neighbors += 2; } //bc above counts as 2
+    if(gameBoard[i-1][j-1].getAlive()) { neighbors++; } //bc diagonal is only 1, no reflection
+  }
+
+  sides();
+  //all the extra sides for mirror mode
+  if((i == 0 || i == gameBoard.length()-1) && j != 0 && j != gameBoard[].length()-1)
+  {
+    //top & bottom sides
+    if(gameBoard[i][j-1].getAlive()) { neighbors++; } //cell right diagonal
+    if(gameBoard[i][j+1].getAlive()) { neighbors++; } //cell left diagonal
+  }
+
+  if(i != 0 && i != gameBoard.length()-1 && (j == 0 || j == gameBoard[].length()-1) )
+  {
+    //left & right sides
+    if(gameBoard[i+1][j].getAlive()) { neighbors++; } //cell left diagonal
+    if(gameBoard[i-1][j].getAlive()) { neighbors++; } //cell right diagonal
+  }
+}
+
+void World::sides()
+{
+  if(bMode == 2)
+  {
+    if(gameBoard[i][j].getAlive()) { neighbors++; } //cell reflection on self for mirror mode
+  }
+
+  //code all the in between the corners on the sides
+  if(i == 0 && j != 0 && j != gameBoard[].length()-1)
+  {
+    if(gameBoard[i][j+1].getAlive()) { neighbors++; } //cell right
+    if(gameBoard[i][j-1].getAlive()) { neighbors++; } //cell left
+    if(gameBoard[i+1][j-1].getAlive()) { neighbors++; } //cell lower left
+    if(gameBoard[i+1][j].getAlive()) { neighbors++; } //cell below
+    if(gameBoard[i+1][j+1].getAlive()) { neighbors++; } //cell lower right
+  }
+
+  if(i == gameBoard.length()-1 && j != 0 && j != gameBoard[].length()-1)
+  {
+    if(gameBoard[i][j+1].getAlive()) { neighbors++; } //cell right
+    if(gameBoard[i][j-1].getAlive()) { neighbors++; } //cell left
+    if(gameBoard[i-1][j-1].getAlive()) { neighbors++; } //cell upper left
+    if(gameBoard[i-1][j].getAlive()) { neighbors++; } //cell above
+    if(gameBoard[i-1][j+1].getAlive()) { neighbors++; } //cell upper right
+  }
+
+  if(i != 0 && i != gameBoard.length()-1 && j == 0)
+  {
+    if(gameBoard[i][j+1].getAlive()) { neighbors++; } //cell right
+    if(gameBoard[i+1][j].getAlive()) { neighbors++; } //cell below
+    if(gameBoard[i-1][j].getAlive()) { neighbors++; } //cell above
+    if(gameBoard[i-1][j+1].getAlive()) { neighbors++; } //cell upper right
+    if(gameBoard[i+1][j+1].getAlive()) { neighbors++; } //cell lower right
+  }
+
+  if(i != 0 && i != gameBoard.length()-1 && j == gameBoard[].length()-1)
+  {
+    if(gameBoard[i][j-1].getAlive()) { neighbors++; } //cell left
+    if(gameBoard[i+1][j].getAlive()) { neighbors++; } //cell below
+    if(gameBoard[i-1][j].getAlive()) { neighbors++; } //cell above
+    if(gameBoard[i-1][j-1].getAlive()) { neighbors++; } //cell upper left
+    if(gameBoard[i+1][j-1].getAlive()) { neighbors++; } //cell lower left
+  }
 }
