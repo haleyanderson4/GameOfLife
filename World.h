@@ -24,13 +24,13 @@ class World
     void dMode(int i, int j);
 
     void getRowsAndColumns(string fileName);
-    void generateGameMap(int columns, int rows);
+    void generateGameMap(Bacteria** gameBoard);
     void translateGameMap(string fileName);
 
     bool end();
 
   private:
-    Bacteria gameBoard[][];
+    Bacteria** gameBoard;
 
     int bMode;
     int vMode;
@@ -39,4 +39,8 @@ class World
     int timeOut;
     int oMode;
     int neighbors;
+
+    int rowT;
+    int columnT;
+    string board;
 };
