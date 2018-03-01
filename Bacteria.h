@@ -1,6 +1,5 @@
 //Haley Anderson, 2270112, ander427@mail.chapman.edu, CPSC 350-02, Assignment 2
 
-#pragma
 #include <iostream>
 
 using namespace std;

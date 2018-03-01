@@ -6,11 +6,6 @@
 #include <math.h>
 #include <string>
 
-void generateGameMap(int columns, int rows);
-void translateGameMap(string fileName);
-
-Bacteria* gameBoard;
-
 
 int main(int argc, char const *argv[])
 {
@@ -19,6 +14,11 @@ int main(int argc, char const *argv[])
     string fileName;
     int bMode;
     int oMode;
+    int mMode;
+
+    int columns;
+    int rows;
+    int timeOut;
 
     do {
       cout<< "Hi, welcome to the Game of Life." << endl;
@@ -27,6 +27,7 @@ int main(int argc, char const *argv[])
       cin>> response;
       if(response == "Y" || response == "y")
       {
+        mMode = 0;
         cout<< "Enter the file name of your game map." << endl;
         if(!(argc==1))
         {
@@ -46,14 +47,12 @@ int main(int argc, char const *argv[])
             //error catching for if you mess up the file input stuff
           }
         }
-        translateGameMap(fileName);
         //if they have their own file they can take in input and use it!
         break;
       }
       else
       {
-        int columns;
-        int rows;
+        mMode = 1;
 
         try
         {
@@ -79,7 +78,6 @@ int main(int argc, char const *argv[])
         }
         //error handling for more input stuff wohoo
 
-        generateGameMap(columns, rows);
         //this is to call random generation if they didnt have a file to input
       }
       cout<< "Your game map has been created." << endl;
@@ -152,100 +150,39 @@ int main(int argc, char const *argv[])
         //error catching
       }
       //to get user input on how they want to be able to see the game play
-
     } while (true);
 
-    World game(gameBoard, bMode, oMode, oFile);
+    do {
+      cout<< "When would you like the game to time out? Some games are endless so please set the number of iterations you will be sastisfied with." << endl;
+      try {
+        cin >> timeOut;
+        if(timeOut > 1)
+        {
+          cout<< "Please enter a number greater than 0." << endl;
+          continue;
+        }
+        break;
+      }
+      catch(exception e)
+      {
+        cout<< "You entered an invalid input. Please try again." << endl;
+      }
+    } while(true);
+
+    if(mMode == 0)
+    {
+      //translate map
+      World game(bMode, oMode, oFile, fileName, timeOut, oMode);
+    }
+    if(mMode == 1)
+    {
+      //generate map
+      World game(bMode, oMode, oFile, columns, rows, timeOut, oMode);
+    }
     cout<< "Welcome to the Game of Life!" << endl;
     game.play();
     cout<< "And thats the end of the Game of Life. Thanks for playing!" << endl;
     cout<< "Please press enter to exit" << endl;
 
     return 0;
-}
-
-void generateGameMap(int columns, int rows)
-{
-    Bacteria** gameBoard = new Bacteria* [rows];
-    for(int i = 0; i < rows; i++) { gameBoard[i] = new Bacteria [columns]; } //to make the 2d array
-
-    for(int i = 0; i < rows; i++)
-    {
-      for(int j = 0; j < columns; j++)
-      {
-        int randBac;
-
-        do {
-          randBac = ((int)rand() / (RAND_MAX));
-        } while(randBac != 0 || randBac != 1 || randBac != 2 || randBac != 3);
-        //get rand number between 1 and 4 to get 1/4 chance of having bacteria
-
-        if(randBac == 0) { gameBoard[i][j].triggerLife(); }
-        else { gameBoard[i][j].triggerDeath(); }
-      }
-    }
-}
-
-void translateGameMap(string fileName)
-{
-    string str;
-    int row = 0;
-    int column;
-    string board = "";
-    ifstream file;
-    file.open(fileName.c_str());
-    if(file.is_open())
-    {
-      while(!file.eof())
-      {
-        getline(file, str);
-        row++;
-        column = str.length();
-        board = board + str;
-      }
-    }
-    file.close();
-    //opens file and turns the inside into one big string!
-    //also gets the row and column numbers
-
-    Bacteria** gameBoard = new Bacteria* [row];
-    for(int i = 0; i < row; i++) { gameBoard[i] = new Bacteria [column]; }
-
-    for(int i = 0; i < row; i++)
-    {
-      for(int j = 0; j < column; j++)
-      {
-        if(board.substr(0,1) == "X" || board.substr(0,1) == "x")
-        {
-          gameBoard[i][j].triggerLife();
-        }
-        else if(board.substr(0,1) == "-")
-        {
-          gameBoard[i][j].triggerDeath();
-        }
-        //turning the map into the game board!
-        else
-        {
-          //if it's not recognized, ask for a recognized character
-          do {
-            string newVal;
-            cout<< "Your map had an invalid input in position [" << i << "][" << j << "]. Please enter either '-' for no bacteria in this location or 'X' for a live bacteria." << endl;
-            cin>> newVal;
-            if(newVal == "-")
-            {
-              gameBoard[i][j].triggerDeath();
-              break;
-            }
-            else if(newVal == "X" || newVal == "x")
-            {
-              gameBoard[i][j].triggerLife();
-              break;
-              //if they still did it wrong they have to try again until they submit to my will
-            }
-            else { cout<< "Please only use the format given. Try again." << endl; }
-          } while(true);
-        }
-        str = str.substr(1);
-      }
-    }
 }

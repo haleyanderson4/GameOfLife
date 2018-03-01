@@ -10,55 +10,77 @@ using namespace std;
 
 World::World() {} //blank constructor
 
-World::World(Bacteria** board, int boundary, int output, string name) //constructor
+World::World(int boundary, int output, string name, int columns, int rows, int timeO, int mode) //constructor
 {
+    Bacteria gameBoard = new Bacteria [rows];
+    for(int i = 0; i < rows; ++i)
+    {
+      gameBoard[i] = new Bacteria [columns];
+    }
+
+    generateGameMap(gameBoard);
+
     bMode = boundary;
     vMode = output;
     oFile = name;
     iteration = 0;
+    timeOut = timeO;
+    oMode = mode;
+}
 
-    Bacteria** gameBoard = new Bacteria* [board.length()];
-    Bacteria** tempBoard = new Bacteria* [board.length()];
-    for(int i = 0; i < board.length(); i++)
+World::World(int boundary, int output, string name, string fileName, int timeO, int mode) //constructor
+{
+    int row, column;
+    getRowsAndColumns(fileName);
+    Bacteria gameBoard = new Bacteria [row];
+    for(int i = 0; i < row; ++i)
     {
-      gameBoard[i] = new Bacteria [board[].length()];
-      tempBoard[i] = new Bacteria [board[].length()];
-      //to make the 2d arrays
+      gameBoard[i] = new Bacteria[column];
     }
+    translateGameMap(fileName);
 
-    for(int i = 0; i < board.length(); i++)
-    {
-      for(int j = 0; j < board[].length(); j++)
-      {
-        gameBoard[i][j] = board[i][j];
-        tempBoard[i][j] = board[i][j];
-        //to intialize the gameBoard and the tempBoard as the map the player requested
-      }
-    }
+    bMode = boundary;
+    vMode = output;
+    oFile = name;
+    iteration = 0;
+    timeOut = timeO;
+    string board;
+    oMode = mode;
 }
 
 World::~World()
 {
     delete [] gameBoard;
-    delete [] tempBoard;
 }
 
 void World::play()
 {
+  for(int x = 1; x <= timeOut; ++x)
+  {
     //where all the rules about living and dying goes
+    Bacteria tempBoard = new Bacteria [gameBoard.length()][gameBoard[].length()];
+
+    for(int i = 0; i < gameBoard.length(); i++)
+    {
+      for(int j = 0; j < gameBoard[].length(); j++)
+      {
+        tempBoard[i][j] = gameBoard[i][j];
+        //to intialize thetempBoard as the same as the gameBoard
+      }
+    }
 
     for(int i = 0; i < gameBoard.length(); ++i)
     {
       for(int j = 0; j < gameBoard[].length(); ++j)
       {
-          int neighbors = 0;
+          neighbors = 0;
 
-          if(i != 0 && j != 0 && i != gameBoard.length()-1 && j != gameBoard[].length()-1) { middles(); }
+          if(i != 0 && j != 0 && i != gameBoard.length()-1 && j != gameBoard[].length()-1) { middles(i, j); }
           else
           {
-            if(bMode == 0) { cMode(); } //Classic mode
-            else if(bMode == 1) { dMode(); } //Doughnut mode
-            else if(bMode == 2) { mMode(); } //Mirror mode
+            if(bMode == 0) { cMode(i, j); } //Classic mode
+            else if(bMode == 1) { dMode(i, j); } //Doughnut mode
+            else if(bMode == 2) { mMode(i, j); } //Mirror mode
           }
 
           if(neighbors < 2 || neighbors > 3) { tempBoard[i][j].triggerDeath(); }
@@ -70,6 +92,12 @@ void World::play()
     {
       for(int j = 0; j <gameBoard[].length(); ++j) { gameBoard[i][j] = tempBoard[i][j]; }
     }
+
+    if(end())
+    {
+      break;
+    }
+  }
 }
 
 void World::output()
@@ -78,7 +106,7 @@ void World::output()
     string results = "\nCycle number " + (string)(iteration) + ":\n";
     for(int i = 0; i < gameBoard.length(); i++)
     {
-      for(int j  0; j < gameBoard[].length(); j++)
+      for(int j = 0; j < gameBoard[].length(); j++)
       {
           if(gameBoard[i][j].getAlive()) { results += "X"; }
           else { results += "-"; }
@@ -116,7 +144,7 @@ void World::output()
     }
 }
 
-void World::middles()
+void World::middles(int i, int j)
 {
     if(gameBoard[i-1][j-1].getAlive()) { neighbors++; } //lower left diagonal
     if(gameBoard[i-1][j+1].getAlive()) { neighbors++; } //lower right diagonal
@@ -128,7 +156,7 @@ void World::middles()
     if(gameBoard[i+1][j].getAlive()) { neighbors++; } //cell directly above
 }
 
-void World::cMode()
+void World::cMode(int i, int j)
 {
   //hard code the 4 corners
   if(i == 0 && j == 0)
@@ -157,10 +185,10 @@ void World::cMode()
   }
 
   //code all the in between the corners on the sides
-  sides();
+  sides(i, j);
 }
 
-void World::dMode()
+void World::dMode(int i, int j)
 {
   //hard code 4 corners
   if(i == 0 && j == 0)
@@ -212,7 +240,7 @@ void World::dMode()
   }
 
   //code all the in between the corners on the sides with the extra for Doughnut
-  sides();
+  sides(i, j);
   if(i == 0 && j != 0 && j != gameBoard[].length()-1)
   {
     if(gameBoard[gameBoard.length()-1][j-1].getAlive()) { neighbors++; } //cell upper left
@@ -242,7 +270,7 @@ void World::dMode()
   }
 }
 
-void World::mMode()
+void World::mMode(int i, int j)
 {
   if(i == 0 && j == 0)
   {
@@ -276,7 +304,7 @@ void World::mMode()
     if(gameBoard[i-1][j-1].getAlive()) { neighbors++; } //bc diagonal is only 1, no reflection
   }
 
-  sides();
+  sides(i, j);
   //all the extra sides for mirror mode
   if((i == 0 || i == gameBoard.length()-1) && j != 0 && j != gameBoard[].length()-1)
   {
@@ -293,7 +321,7 @@ void World::mMode()
   }
 }
 
-void World::sides()
+void World::sides(int i, int j)
 {
   if(bMode == 2)
   {
@@ -336,4 +364,103 @@ void World::sides()
     if(gameBoard[i-1][j-1].getAlive()) { neighbors++; } //cell upper left
     if(gameBoard[i+1][j-1].getAlive()) { neighbors++; } //cell lower left
   }
+}
+
+void World::generateGameMap(Bacteria gameBoard)
+{
+    for(int i = 0; i < rows; i++)
+    {
+      for(int j = 0; j < columns; j++)
+      {
+        int randBac;
+
+        do {
+          randBac = ((int)rand() / (RAND_MAX));
+        } while(randBac != 0 || randBac != 1 || randBac != 2 || randBac != 3);
+        //get rand number between 1 and 4 to get 1/4 chance of having bacteria
+
+        if(randBac == 0) { gameBoard[i][j].triggerLife(); }
+        else { gameBoard[i][j].triggerDeath(); }
+      }
+    }
+}
+
+void getRowsAndColumns(fileName)
+{
+  string str;
+  row = 0;
+  board = "";
+  ifstream file;
+  file.open(fileName.c_str());
+  if(file.is_open())
+  {
+    while(!file.eof())
+    {
+      getline(file, str);
+      row++;
+      column = str.length();
+      board = board + str;
+    }
+  }
+  file.close();
+  //opens file and turns the inside into one big string!
+  //also gets the row and column numbers
+}
+
+void World::translateGameMap(string fileName)
+{
+    for(int i = 0; i < gameBoard.length(); i++)
+    {
+      for(int j = 0; j < gameBoard[].length(); j++)
+      {
+        if(board.substr(0,1) == "X" || board.substr(0,1) == "x")
+        {
+          gameBoard[i][j].triggerLife();
+        }
+        else if(board.substr(0,1) == "-")
+        {
+          gameBoard[i][j].triggerDeath();
+        }
+        //turning the map into the game board!
+        else
+        {
+          //if it's not recognized, ask for a recognized character
+          do {
+            string newVal;
+            cout<< "Your map had an invalid input in position [" << i << "][" << j << "]. Please enter either '-' for no bacteria in this location or 'X' for a live bacteria." << endl;
+            cin>> newVal;
+            if(newVal == "-")
+            {
+              gameBoard[i][j].triggerDeath();
+              break;
+            }
+            else if(newVal == "X" || newVal == "x")
+            {
+              gameBoard[i][j].triggerLife();
+              break;
+              //if they still did it wrong they have to try again until they submit to my will
+            }
+            else { cout<< "Please only use the format given. Try again." << endl; }
+          } while(true);
+        }
+        str = str.substr(1);
+      }
+    }
+}
+
+bool World::end()
+{
+  int x = 0;
+  for(int i = 0; i < gameBoard.length(); i++)
+  {
+    for(int j = 0; j < gameBoard[].length(); j++)
+    {
+      if (gameBoard[i][j].isAlive())
+      {
+        return false;
+      }
+      //to see if they are all dead
+    }
+  }
+  return true;
 }
