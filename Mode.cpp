@@ -1,6 +1,7 @@
 //Haley Anderson, 2270112, ander427@mail.chapman.edu, CPSC 350-02, Assignment 2
 
 #include <iostream>
+#pragma
 #include "World.h"
 
 using namespace std;

@@ -14,8 +14,8 @@ Mode.o: Makefile Mode.cpp
 World.o: Makefile World.cpp
 	$(CC) $(BUILD_FLAGS) -c World.cpp -o World.o
 
-main.out: Makefile World.o Bacteria.o main.cpp
-	$(CC) $(BUILD_FLAGS) World.o Bacteria.o Mode.o main.cpp -o main.out
+main.out: Makefile World.o Mode.o Bacteria.o main.cpp
+	$(CC) $(BUILD_FLAGS) World.o Mode.o Bacteria.o main.cpp -o main.out
 
 clean:
 	$(RM) $(OUT) $(OBJECTS)
