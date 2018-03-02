@@ -5,12 +5,18 @@
 #include <chrono>
 #include <thread>
 #include <math.h>
+#include <string>
+#include <fstream>
+#include <sstream>
+#include <iostream>
 
 using namespace std;
 
 World::World() {} //blank constructor
 
-World::World(int boundary, int output, string name, int columns, int rows, int timeO, int mode) //constructor
+World::~World() { delete [] gameBoard; }
+
+void World::setWorld(int boundary, int output, string name, int columns, int rows, int timeO, int mode) //constructor
 {
     Bacteria** gameBoard = new Bacteria*[rows];
     for(int i = 0; i < rows; ++i)
@@ -28,17 +34,16 @@ World::World(int boundary, int output, string name, int columns, int rows, int t
     oMode = mode;
 }
 
-World::World(int boundary, int output, string name, string fileName, int timeO, int mode) //constructor
+void World::setWorldTranslate(int boundary, int output, string name, string insides, int timeO, int mode, int c, int r) //constructor
 {
-    rowT = 0;
-    columnT = 0;
-    getRowsAndColumns(fileName);
+    rowT = r;
+    columnT = c;
     Bacteria** gameBoard = new Bacteria*[rowT];
     for(int i = 0; i < rowT; ++i)
     {
       gameBoard[i] = new Bacteria[columnT];
     }
-    translateGameMap(fileName);
+    translateGameMap(insides);
 
     bMode = boundary;
     vMode = output;
@@ -50,17 +55,13 @@ World::World(int boundary, int output, string name, string fileName, int timeO, 
     board = "";
 }
 
-World::~World()
-{
-    delete [] gameBoard;
-}
-
 void World::play()
 {
   for(int x = 1; x <= timeOut; ++x)
   {
     //where all the rules about living and dying goes
     Bacteria** tempBoard = new Bacteria*[sizeof(gameBoard)];
+    Bacteria** oldBoard = new Bacteria*[sizeof(gameBoard)];
     for(int i = 0; i < sizeof(gameBoard); ++i) { gameBoard[i] = new Bacteria [sizeof(gameBoard[0])]; }
 
     for(int i = 0; i < sizeof(gameBoard); i++)
@@ -68,7 +69,8 @@ void World::play()
       for(int j = 0; j < sizeof(gameBoard[0]); j++)
       {
         tempBoard[i][j] = gameBoard[i][j];
-        //to intialize thetempBoard as the same as the gameBoard
+        oldBoard[i][j] = gameBoard[i][j];
+        //to intialize the tempBoard & old board as the same as the gameBoard
       }
     }
 
@@ -76,15 +78,10 @@ void World::play()
     {
       for(int j = 0; j < sizeof(gameBoard[0]); ++j)
       {
-          neighbors = 0;
-
-          if(i != 0 && j != 0 && i != sizeof(gameBoard)-1 && j != sizeof(gameBoard[0])-1) { middles(i, j); }
-          else
-          {
-            if(bMode == 0) { cMode(i, j); } //Classic mode
-            else if(bMode == 1) { dMode(i, j); } //Doughnut mode
-            else if(bMode == 2) { mMode(i, j); } //Mirror mode
-          }
+          Mode num;
+          num.setUp(gameBoard, i, j, bMode);
+          neighbors = num.getNeighbors();
+          //Mode exsists to count the neighbors
 
           if(neighbors < 2 || neighbors > 3) { tempBoard[i][j].triggerDeath(); }
           if(neighbors == 3) { tempBoard[i][j].triggerLife(); }
@@ -93,11 +90,16 @@ void World::play()
 
     for(int i = 0; i < sizeof(gameBoard); ++i)
     {
-      for(int j = 0; j <sizeof(gameBoard[0]); ++j) { gameBoard[i][j] = tempBoard[i][j]; }
+      for(int j = 0; j <sizeof(gameBoard[0]); ++j)
+      {
+        oldBoard[i][j] = gameBoard[i][j];
+        gameBoard[i][j] = tempBoard[i][j];
+      }
     }
 
-    if(end())
+    if(end(oldBoard))
     {
+      cout<< "And that ends it!" << endl;
       break;
     }
   }
@@ -122,8 +124,8 @@ void World::output()
     {
       //output file
       ofstream outputFile;
-      outputFile.open(oFile.out);
-      outputFile << results << endl;
+      outputFile.open(oFile);
+      if (outputFile.is_open()) { outputFile << results << endl; }
       outputFile.close();
     }
     else
@@ -147,228 +149,6 @@ void World::output()
     }
 }
 
-void World::middles(int i, int j)
-{
-    if(gameBoard[i-1][j-1].getAlive() == true) { neighbors++; } //lower left diagonal
-    if(gameBoard[i-1][j+1].getAlive() == true) { neighbors++; } //lower right diagonal
-    if(gameBoard[i][j+1].getAlive() == true) { neighbors++; } //cell directly right
-    if(gameBoard[i-1][j].getAlive() == true) { neighbors++; } //cell below
-    if(gameBoard[i][j-1].getAlive() == true) { neighbors++; } //cell directly left
-    if(gameBoard[i+1][j-1].getAlive() == true) { neighbors++; } //upper left diagonal
-    if(gameBoard[i+1][j+1].getAlive() == true) { neighbors++; } //upper right diagonal
-    if(gameBoard[i+1][j].getAlive() == true) { neighbors++; } //cell directly above
-}
-
-void World::cMode(int i, int j)
-{
-  //hard code the 4 corners
-  if(i == 0 && j == 0)
-  {
-    if(gameBoard[0][1].getAlive() == true) { neighbors++; } //cell directly right
-    if(gameBoard[1][1].getAlive() == true) { neighbors++; } //cell diagonal
-    if(gameBoard[1][0].getAlive() == true) { neighbors++; } //cell directly below
-  }
-  if(i == 0 && j == sizeof(gameBoard[0])-1)
-  {
-    if(gameBoard[0][sizeof(gameBoard[0])-2].getAlive() == true) { neighbors++; } //cell directly left
-    if(gameBoard[1][sizeof(gameBoard[0])-1].getAlive() == true) { neighbors++; } //cell directly below
-    if(gameBoard[1][sizeof(gameBoard[0])-2].getAlive() == true) { neighbors++; } //cell diagonal
-  }
-  if(i == sizeof(gameBoard)-1 && j == 0)
-  {
-    if(gameBoard[sizeof(gameBoard)-1][1].getAlive() == true) { neighbors++; } //cell directly right
-    if(gameBoard[sizeof(gameBoard)-2][0].getAlive() == true) { neighbors++; } //cell directly above
-    if(gameBoard[sizeof(gameBoard[0])-2][1].getAlive() == true) { neighbors++; } //cell diagonal
-  }
-  if(i == sizeof(gameBoard)-1 && j == sizeof(gameBoard[0])-1)
-  {
-    if(gameBoard[sizeof(gameBoard[0])-1][sizeof(gameBoard[0])-2].getAlive() == true) { neighbors++; } //cell left
-    if(gameBoard[sizeof(gameBoard[0])-2][sizeof(gameBoard[0])-1].getAlive() == true) { neighbors++; } //cell above
-    if(gameBoard[sizeof(gameBoard[0])-2][sizeof(gameBoard[0])-2].getAlive() == true) { neighbors++; } //cell diagonal
-  }
-
-  //code all the in between the corners on the sides
-  sides(i, j);
-}
-
-void World::dMode(int i, int j)
-{
-  //hard code 4 corners
-  if(i == 0 && j == 0)
-  {
-    if(gameBoard[sizeof(gameBoard)-1][j].getAlive() == true){ neighbors++; } //cell above
-    if(gameBoard[sizeof(gameBoard)-1][j+1].getAlive() == true) { neighbors++; } //cell upper right diagonal
-    if(gameBoard[sizeof(gameBoard)-1][sizeof(gameBoard[0])-1].getAlive() == true){ neighbors++; } //upper left diagonal
-    if(gameBoard[i][sizeof(gameBoard[0])-1].getAlive() == true) { neighbors++; } //left
-    if(gameBoard[i+1][sizeof(gameBoard[0])-1].getAlive() == true) { neighbors++; } //lower left diagonal
-    if(gameBoard[i][j+1].getAlive() == true) { neighbors++; } //cell right
-    if(gameBoard[i+1][j+1].getAlive() == true) { neighbors++; } //cell lower right diagonal
-    if(gameBoard[i+1][j].getAlive() == true) { neighbors++; } //cell below
-  }
-
-  if(i == 0 && j == sizeof(gameBoard[0])-1)
-  {
-    if(gameBoard[i+1][j].getAlive() == true) { neighbors++; } //cell below
-    if(gameBoard[i+1][j-1].getAlive() == true) { neighbors++; } //cell lower left diagonal
-    if(gameBoard[i+1][0].getAlive() == true) { neighbors++; } //lower right diagonal
-    if(gameBoard[i][j-1].getAlive() == true) { neighbors++; } //cell left
-    if(gameBoard[i][0].getAlive() == true) { neighbors++; } //cell right
-    if(gameBoard[sizeof(gameBoard)-1][j].getAlive() == true) { neighbors++; } //cell above
-    if(gameBoard[sizeof(gameBoard)-1][j-1].getAlive() == true) { neighbors++; } //cell upper left diagonal
-    if(gameBoard[sizeof(gameBoard)-1][0].getAlive() == true) { neighbors++; } //upper right diagonal
-  }
-
-  if(i == sizeof(gameBoard)-1 && j == 0)
-  {
-    if(gameBoard[i][j+1].getAlive() == true) { neighbors++; } //cell left
-    if(gameBoard[i][sizeof(gameBoard[0])-1].getAlive() == true) { neighbors++; } //cell right
-    if(gameBoard[0][j].getAlive() == true) { neighbors++; } //cell below
-    if(gameBoard[0][j+1].getAlive() == true) { neighbors++; } //cell lower right
-    if(gameBoard[i-1][j].getAlive() == true) { neighbors++; } //cell above
-    if(gameBoard[i-1][j+1].getAlive() == true) { neighbors++; } //cell upper right diagonal
-    if(gameBoard[sizeof(gameBoard)-1][sizeof(gameBoard[0])-1].getAlive() == true) { neighbors++; } //cell lower left diagonal
-    if(gameBoard[i-1][sizeof(gameBoard[0])-1].getAlive() == true) { neighbors++; } //cell upper left diagonal
-  }
-
-  if(i == sizeof(gameBoard)-1 && j == sizeof(gameBoard[0])-1)
-  {
-    if(gameBoard[i][j-1].getAlive() == true) { neighbors++; } //cell left
-    if(gameBoard[i-1][j].getAlive() == true) { neighbors++; } //cell above
-    if(gameBoard[i-1][j-1].getAlive() == true) { neighbors++; } //cell left upper diagonal
-    if(gameBoard[i][0].getAlive() == true) { neighbors++; } //cell right
-    if(gameBoard[i-1][0].getAlive() == true) { neighbors++; } //cell upper left diagonal
-    if(gameBoard[0][j].getAlive() == true) { neighbors++; } //cell below
-    if(gameBoard[0][j-1].getAlive() == true) { neighbors++; } //cell lower left diagonal
-    if(gameBoard[0][0].getAlive() == true) { neighbors++; } //cell lower right diagonal
-  }
-
-  //code all the in between the corners on the sides with the extra for Doughnut
-  sides(i, j);
-  if(i == 0 && j != 0 && j != sizeof(gameBoard[0])-1)
-  {
-    if(gameBoard[sizeof(gameBoard)-1][j-1].getAlive() == true) { neighbors++; } //cell upper left
-    if(gameBoard[sizeof(gameBoard)-1][j].getAlive() == true) { neighbors++; } //cell above
-    if(gameBoard[sizeof(gameBoard)-1][j+1].getAlive() == true) { neighbors++; } //cell upper right
-  }
-
-  if(i == sizeof(gameBoard)-1 && j != 0 && j != sizeof(gameBoard[0])-1)
-  {
-    if(gameBoard[0][j-1].getAlive() == true) { neighbors++; } //cell lower left diagonal
-    if(gameBoard[0][j].getAlive() == true) { neighbors++; } //cell below
-    if(gameBoard[0][j+1].getAlive() == true) { neighbors++; } //cell lower right diagonal
-  }
-
-  if(i != 0 && i != sizeof(gameBoard)-1 && j == 0)
-  {
-    if(gameBoard[i-1][sizeof(gameBoard[0])-1].getAlive() == true) { neighbors++; } //cell upper left diagonal
-    if(gameBoard[i][sizeof(gameBoard[0])-1].getAlive() == true) { neighbors++; } //cell left
-    if(gameBoard[i+1][sizeof(gameBoard[0])-1].getAlive() == true) { neighbors++; } //cell lower left diagonal
-  }
-
-  if(i != 0 && i != sizeof(gameBoard)-1 && j == sizeof(gameBoard[0])-1)
-  {
-    if(gameBoard[i-1][0].getAlive() == true) { neighbors++; } //cell upper right diagonal
-    if(gameBoard[i][0].getAlive() == true) { neighbors++; } //cell lower right
-    if(gameBoard[i+1][0].getAlive() == true) { neighbors++; } //cell lower right diagonal
-  }
-}
-
-void World::mMode(int i, int j)
-{
-  if(i == 0 && j == 0)
-  {
-    if(gameBoard[i][j].getAlive() == true) { neighbors += 3; } //because its own reflection counts as 3, left, above, diagonal
-    if(gameBoard[i][j+1].getAlive() == true) { neighbors += 2; } //bc left counts as 2
-    if(gameBoard[i+1][j].getAlive() == true) { neighbors += 2; } //bc below counts as 2
-    if(gameBoard[i+1][j+1].getAlive() == true) { neighbors++; } //bc diagonal is only 1, no reflection
-  }
-
-  if (i == 0 && j == sizeof(gameBoard[0])-1)
-  {
-    if(gameBoard[i][j].getAlive() == true) { neighbors += 3; } //because its own reflection counts as 3, left, above, diagonal
-    if(gameBoard[i][j-1].getAlive() == true) { neighbors += 2; } //bc left counts as 2
-    if(gameBoard[i+1][j].getAlive() == true) { neighbors += 2; } //bc below counts as 2
-    if(gameBoard[i+1][j-1].getAlive() == true) { neighbors++; } //bc diagonal is only 1, no reflection
-  }
-
-  if(i == sizeof(gameBoard)-1 && j == 0)
-  {
-    if(gameBoard[i][j].getAlive() == true) { neighbors += 3; } //because its own reflection counts as 3, left, above, diagonal
-    if(gameBoard[i-1][j].getAlive() == true) { neighbors += 2; } //bc above counts as 2
-    if(gameBoard[i][j+1].getAlive() == true) { neighbors += 2; } //bc right counts as 2
-    if(gameBoard[i-1][j+1].getAlive() == true) { neighbors++; } //bc diagonal is only 1, no reflection
-  }
-
-  if(i == sizeof(gameBoard)-1 && j == sizeof(gameBoard[0])-1)
-  {
-    if(gameBoard[i][j].getAlive() == true) { neighbors += 3; } //because its own reflection counts as 3, left, above, diagonal
-    if(gameBoard[i][j-1].getAlive() == true) { neighbors += 2; } //bc left counts as 2
-    if(gameBoard[i+1][j].getAlive() == true) { neighbors += 2; } //bc above counts as 2
-    if(gameBoard[i-1][j-1].getAlive() == true) { neighbors++; } //bc diagonal is only 1, no reflection
-  }
-
-  sides(i, j);
-  //all the extra sides for mirror mode
-  if((i == 0 || i == sizeof(gameBoard)-1) && j != 0 && j != sizeof(gameBoard[0])-1)
-  {
-    //top & bottom sides
-    if(gameBoard[i][j-1].getAlive() == true) { neighbors++; } //cell right diagonal
-    if(gameBoard[i][j+1].getAlive() == true) { neighbors++; } //cell left diagonal
-  }
-
-  if(i != 0 && i != sizeof(gameBoard)-1 && (j == 0 || j == sizeof(gameBoard[0])-1) )
-  {
-    //left & right sides
-    if(gameBoard[i+1][j].getAlive() == true) { neighbors++; } //cell left diagonal
-    if(gameBoard[i-1][j].getAlive() == true) { neighbors++; } //cell right diagonal
-  }
-}
-
-void World::sides(int i, int j)
-{
-  if(bMode == 2)
-  {
-    if(gameBoard[i][j].getAlive() == true) { neighbors++; } //cell reflection on self for mirror mode
-  }
-
-  //code all the in between the corners on the sides
-  if(i == 0 && j != 0 && j != sizeof(gameBoard[0])-1)
-  {
-    if(gameBoard[i][j+1].getAlive() == true) { neighbors++; } //cell right
-    if(gameBoard[i][j-1].getAlive() == true) { neighbors++; } //cell left
-    if(gameBoard[i+1][j-1].getAlive() == true) { neighbors++; } //cell lower left
-    if(gameBoard[i+1][j].getAlive() == true) { neighbors++; } //cell below
-    if(gameBoard[i+1][j+1].getAlive() == true) { neighbors++; } //cell lower right
-  }
-
-  if(i == sizeof(gameBoard)-1 && j != 0 && j != sizeof(gameBoard[0])-1)
-  {
-    if(gameBoard[i][j+1].getAlive() == true) { neighbors++; } //cell right
-    if(gameBoard[i][j-1].getAlive() == true) { neighbors++; } //cell left
-    if(gameBoard[i-1][j-1].getAlive() == true) { neighbors++; } //cell upper left
-    if(gameBoard[i-1][j].getAlive() == true) { neighbors++; } //cell above
-    if(gameBoard[i-1][j+1].getAlive() == true) { neighbors++; } //cell upper right
-  }
-
-  if(i != 0 && i != sizeof(gameBoard)-1 && j == 0)
-  {
-    if(gameBoard[i][j+1].getAlive() == true) { neighbors++; } //cell right
-    if(gameBoard[i+1][j].getAlive() == true) { neighbors++; } //cell below
-    if(gameBoard[i-1][j].getAlive() == true) { neighbors++; } //cell above
-    if(gameBoard[i-1][j+1].getAlive() == true) { neighbors++; } //cell upper right
-    if(gameBoard[i+1][j+1].getAlive() == true) { neighbors++; } //cell lower right
-  }
-
-  if(i != 0 && i != sizeof(gameBoard)-1 && j == sizeof(gameBoard[0])-1)
-  {
-    if(gameBoard[i][j-1].getAlive() == true) { neighbors++; } //cell left
-    if(gameBoard[i+1][j].getAlive() == true) { neighbors++; } //cell below
-    if(gameBoard[i-1][j].getAlive() == true) { neighbors++; } //cell above
-    if(gameBoard[i-1][j-1].getAlive() == true) { neighbors++; } //cell upper left
-    if(gameBoard[i+1][j-1].getAlive() == true) { neighbors++; } //cell lower left
-  }
-}
-
 void World::generateGameMap(Bacteria** gameBoard)
 {
     for(int i = 0; i < sizeof(gameBoard); i++)
@@ -388,38 +168,7 @@ void World::generateGameMap(Bacteria** gameBoard)
     }
 }
 
-void World::getRowsAndColumns(string fileName)
-{
-  int count = 1;
-  string str;
-  ifstream file;
-  file.open(fileName.c_str());
-  if(file.is_open())
-  {
-    while(!file.eof())
-    {
-      if(count == 1)
-      {
-        getline(file, str);
-        columnT = (int&)str;
-        count++;
-      }
-      if(count == 2)
-      {
-        getline(file, str);
-        rowT = (int&)str;
-        count++;
-      }
-      getline(file, str);
-      board = board + str;
-    }
-  }
-  file.close();
-  //opens file and turns the inside into one big string!
-  //also gets the row and column numbers
-}
-
-void World::translateGameMap(string fileName)
+void World::translateGameMap(string board)
 {
     for(int i = 0; i < sizeof(gameBoard); i++)
     {
@@ -460,13 +209,25 @@ void World::translateGameMap(string fileName)
     }
 }
 
-bool World::end()
+bool World::end(Bacteria** oldBoard)
 {
   for(int i = 0; i < sizeof(gameBoard); i++)
   {
     for(int j = 0; j < sizeof(gameBoard[0]); j++)
     {
-      if (gameBoard[i][j].getAlive() == true == true)
+      if (gameBoard[i][j].getAlive() != oldBoard[i][j].getAlive())
+      {
+        return false;
+      }
+      //to see if it's the same as the last generation
+    }
+  }
+
+  for(int i = 0; i < sizeof(gameBoard); i++)
+  {
+    for(int j = 0; j < sizeof(gameBoard[0]); j++)
+    {
+      if (gameBoard[i][j].getAlive() == true)
       {
         return false;
       }

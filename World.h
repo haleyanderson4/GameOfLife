@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include "Bacteria.h"
+#include "Mode.h"
 
 using namespace std;
 
@@ -9,25 +10,17 @@ class World
 {
   public:
     World(); //blank constructor
-    World(int boundary, int output, string name, int columns, int rows, int timeO, int mode); //overload constructor
-    World(int boundary, int output, string name, string fileName, int timeO, int mode); //overload constructor
     ~World(); //deconstructor
+    void setWorld(int boundary, int output, string name, int columns, int rows, int timeO, int mode); //overload constructor
+    void setWorldTranslate(int boundary, int output, string name, string insides, int timeO, int mode, int c, int r); //overload constructor
 
     void play();
     void output();
 
-    void middles(int i, int j);
-    void sides(int i, int j);
-
-    void mMode(int i, int j);
-    void cMode(int i, int j);
-    void dMode(int i, int j);
-
-    void getRowsAndColumns(string fileName);
     void generateGameMap(Bacteria** gameBoard);
     void translateGameMap(string fileName);
 
-    bool end();
+    bool end(Bacteria** oldBoard);
 
   private:
     Bacteria** gameBoard;
