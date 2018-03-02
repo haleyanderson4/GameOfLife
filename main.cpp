@@ -18,19 +18,18 @@ int main(int argc, char **argv)
 
   int columns;
   int rows;
-  int timeOut;
 
   int column;
   int row;
 
   cout<< "Hi, welcome to the Game of Life." << endl;
-  do {
-    cout<< "Would you like to input a game map or have one randomly generated?" << endl;
-    cout<< "Type 'Y' if you have a map and anything else if not." << endl;
-    cin>> response;
-    if(response == "Y" || response == "y")
-    {
-      mMode = 0;
+  cout<< "Would you like to input a game map or have one randomly generated?" << endl;
+  cout<< "Type 'Y' if you have a map and anything else if not." << endl;
+  cin>> response;
+  if(response == "Y" || response == "y")
+  {
+    mMode = 0;
+    do {
       cout<< "Enter the file name of your game map." << endl;
       if(!(argc==1))
       {
@@ -43,32 +42,34 @@ int main(int argc, char **argv)
         {
           int count = 1;
           string str;
-          do {
-            string fileName;
-
-            cout<< "Please enter the name of the file you would like to output to." << endl;
-            ifstream newFile;
-            cin >> fileName;
-            newFile.open(fileName);
-            if (newFile.is_open())
+          string fileName;
+          ifstream newFile;
+          cin >> fileName;
+          newFile.open(fileName);
+          if (newFile.is_open())
+          {
+            while(!newFile.eof())
             {
               if(count == 1)
               {
                 getline(newFile, str);
-                column = (int&)str;
+                //column = (int&)str;
                 count++;
               }
               if(count == 2)
               {
                 getline(newFile, str);
-                row = (int&)str;
+                //row = (int&)str;
                 count++;
               }
               getline(newFile, str);
               board = board + str;
+
+              row++;
+              column = str.length();
             }
-            break;
-          } while(true);
+            newFile.close();
+          }
         }
         catch(exception e)
         {
@@ -79,11 +80,12 @@ int main(int argc, char **argv)
         //if they have their own file they can take in input and use it!
         break;
       }
-    }
-    else
-    {
-      mMode = 1;
-
+    } while(true);
+  }
+  else
+  {
+    mMode = 1;
+    do {
       try
       {
         cout<< "Please enter the dimensions of your game map. \nColumns:" << endl;
@@ -109,10 +111,10 @@ int main(int argc, char **argv)
       //error handling for more input stuff wohoo
 
       //this is to call random generation if they didnt have a file to input
-    }
-    cout<< "Your game map has been created." << endl;
-    break;
-  } while(true);
+      cout<< "Your game map has been created." << endl;
+      break;
+    } while(true);
+  }
 
   do {
     cout<< "What kind of boundary mode would you like? Doughnut mode, Mirror Mode, or Classic mode?" << endl;
@@ -144,6 +146,7 @@ int main(int argc, char **argv)
   do {
     cout<< "How would you like the generations to proceed? \nWould you like a slight pause between generations being printed, to press the 'enter' key to move to the next generation, or if the game should be output to a different file?" << endl;
     cout<< "Press 'P' for pauses, 'E' to enter, or 'O' to output the game to a file." << endl;
+    cin>> response;
     if(response == "P" || response == "p" )
     {
       oMode = 0;
@@ -174,43 +177,28 @@ int main(int argc, char **argv)
           continue;
         }
       } while(true);
-      break;
+
     }
     else
     {
       cout<< "Sorry that was not a valid response. Please try again." << endl;
+      continue;
       //error catching
     }
     //to get user input on how they want to be able to see the game play
+    break;
   } while (true);
-
-  do {
-    cout<< "When would you like the game to time out? Some games are endless so please set the number of iterations you will be sastisfied with." << endl;
-    try {
-      cin >> timeOut;
-      if(timeOut > 1)
-      {
-        cout<< "Please enter a number greater than 0." << endl;
-        continue;
-      }
-      break;
-    }
-    catch(exception e)
-    {
-      cout<< "You entered an invalid input. Please try again." << endl;
-    }
-  } while(true);
 
   World game;
   if(mMode == 0)
   {
     //translate map
-    game.setWorldTranslate(bMode, oMode, oFile, board, timeOut, oMode, column, row);
+    game.setWorldTranslate(bMode, oMode, oFile, board, oMode, column, row);
   }
   else if(mMode == 1)
   {
     //generate map
-    game.setWorld(bMode, oMode, oFile, columns, rows, timeOut, oMode);
+    game.setWorldGenerate(bMode, oMode, oFile, columns, rows, oMode);
   }
   cout<< "Welcome to the Game of Life!" << endl;
   game.play();

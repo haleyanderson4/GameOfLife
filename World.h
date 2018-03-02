@@ -11,14 +11,11 @@ class World
   public:
     World(); //blank constructor
     ~World(); //deconstructor
-    void setWorld(int boundary, int output, string name, int columns, int rows, int timeO, int mode); //overload constructor
-    void setWorldTranslate(int boundary, int output, string name, string insides, int timeO, int mode, int c, int r); //overload constructor
+    void setWorldGenerate(int boundary, int output, string name, int columns, int rows, int mode); //overload constructor
+    void setWorldTranslate(int boundary, int output, string name, string board, int mode, int c, int r); //overload constructor
 
     void play();
     void output();
-
-    void generateGameMap(Bacteria** gameBoard);
-    void translateGameMap(string fileName);
 
     bool end(Bacteria** oldBoard);
 
@@ -29,11 +26,8 @@ class World
     int vMode;
     string oFile;
     int iteration;
-    int timeOut;
     int oMode;
     int neighbors;
 
-    int rowT;
-    int columnT;
     string board;
 };
